@@ -1,10 +1,4 @@
-import {
-  HttpEvent,
-  HttpEventType,
-  HttpHandlerFn,
-  HttpRequest,
-  HttpResponse,
-} from "@angular/common/http";
+import {HttpEvent, HttpEventType, HttpHandlerFn, HttpRequest,} from "@angular/common/http";
 import {map, Observable} from "rxjs";
 import type Person from "./person";
 
@@ -24,30 +18,40 @@ export default function server(
     if (event.type !== HttpEventType.Response) {
       return event;
     }
-    let copy = event.clone() as HttpResponse<Person[]>;
+
+    // copy the body, so we can modify it
+    let body: Person[] = Array.isArray(event.body) ? [...event.body] : [];
+
+    // searching...
+    const q = url.searchParams.get("q");
+    if (q) {
+      body = body.map(item => {
+        const flat = JSON.stringify(item).toLowerCase().trim();
+        if (flat.includes(q)) {
+          return item;
+        }
+        return false;
+      }).filter(Boolean) as Person[];
+    }
 
     // sorting
     const active = url.searchParams.get("active") as keyof Person;
     const direction = url.searchParams.get("direction");
 
     if (active && direction) {
-      const body = [...copy.body ?? []];
       body.sort((a: Person, b: Person) =>
         (direction === "asc")
           ? (a[active] > b[active] ? 1 : -1)
           : (a[active] < b[active] ? 1 : -1)
       );
-      copy = copy.clone({body});
     }
 
     // pagination
     const page = parseInt(url.searchParams.get("page") ?? "0", 10);
     const size = parseInt(url.searchParams.get("size") ?? "20", 10);
 
-    copy = copy.clone({
-      body: (copy.body ?? []).slice(page * size, (page + 1) * size),
-    });
+    body = body.slice(page * size, (page + 1) * size);
 
-    return copy;
+    return event.clone({body});
   }));
 }

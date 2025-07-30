@@ -29,10 +29,12 @@ app-root {
 
 /* Special case of the input in the search bar... */
 app-search {
+  display: flex;
+  transform: translateY(10px);
   --mat-form-field-container-height: 32px;
   --mat-form-field-container-vertical-padding: 0px;
 
-  transform: translateY(10px);
+  /*transform: translateY(20px);*/
 
   .mat-mdc-text-field-wrapper {
     background-color: white;

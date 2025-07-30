@@ -11,15 +11,14 @@ import {MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatDrawer, MatDrawerContainer, MatDrawerContent,} from "@angular/material/sidenav";
-import {MatFormField, MatLabel, MatOption, MatSelect,} from "@angular/material/select";
 import {MatTooltip} from "@angular/material/tooltip";
-import {MatButtonToggle, MatButtonToggleGroup,} from "@angular/material/button-toggle";
-import {MatCheckbox} from "@angular/material/checkbox";
 import {MatDialog} from "@angular/material/dialog";
 import About from "./components/about";
 import type Person from "./person";
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import Search from './components/search';
+import Table from './components/table';
+import TableSettings from './components/table-settings';
 
 const PERSONS =
   "https://ziv.github.io/angular-table-route-example/persons.json?";
@@ -39,16 +38,11 @@ const PERSONS =
     MatDrawerContainer,
     MatDrawerContent,
     MatDrawer,
-    MatFormField,
-    MatLabel,
-    MatSelect,
-    MatOption,
     MatTooltip,
-    MatButtonToggleGroup,
-    MatButtonToggle,
-    MatCheckbox,
     ReactiveFormsModule,
-    Search
+    Search,
+    Table,
+    TableSettings
   ],
   host: {
     "[style.--mat-toolbar-container-background-color]":
@@ -72,48 +66,24 @@ const PERSONS =
       overflow-y: scroll;
     }
 
-    table {
-      width: 100%;
-    }
-
-    table.all td {
-      border: 1px solid currentColor;
-    }
-
-    table.none td {
-      border: 0;
-    }
-
-    table.colorful tr:nth-child(even) {
-      background-color: var(--mat-sys-secondary-container);
-    }
-
     section {
       margin: 1em;
-
-      h2 {
-        margin-top: 2em;
-        font-weight: 300;
-        font-size: 1.2rem;
-      }
-
-
     }
   `,
   template: `
-    <mat-toolbar>
-      <h1>Route as source of truth example</h1>
-      <div class="search">
-        <app-search (query)="update({q: $event})"/>
-      </div>
+    <!--
+        All the "@defer {}" blocks are used to reduce the initial loading time of the application.
+        Without them, the bundle size would be large and not optimized for initial loading.
 
-      <!--
-      All the "@defer {}" blocks are used to reduce the initial loading time of the application.
-      Without them, the bundle size would be large and not optimized for initial loading.
+        @see https://angular.dev/guide/templates/defer#defer
+        -->
+    @defer (on idle) {
+      <mat-toolbar>
+        <h1>Route as source of truth example</h1>
+        <div class="search">
+          <app-search (query)="update($event)"/>
+        </div>
 
-      @see https://angular.dev/guide/templates/defer#defer
-      -->
-      @defer (on idle) {
         <button [matMenuTriggerFor]="main" mat-icon-button>
           <mat-icon>menu</mat-icon>
         </button>
@@ -133,62 +103,21 @@ const PERSONS =
             <span>About</span>
           </button>
         </mat-menu>
-      }
-    </mat-toolbar>
+      </mat-toolbar>
+    }
 
     <main>
       <mat-drawer-container>
         <mat-drawer mode="over" #table>
           @defer (on idle) {
             <section>
-              <h2>Columns</h2>
-              <mat-form-field appearance="outline">
-                <mat-label>Show columns</mat-label>
-                <mat-select multiple [value]="columns" (valueChange)="update({cols: $event})">
-                  @for (c of columns; track c) {
-                    <mat-option [value]="c">{{ c }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-
-              <h2>Borders</h2>
-              <mat-button-toggle-group hideSingleSelectionIndicator>
-                @for (b of border; track b.value) {
-                  <mat-button-toggle [matTooltip]="b.tip"
-                                     [checked]="borders()==b.value"
-                                     (click)="update({border: b.value})">
-                    <mat-icon>{{ b.icon }}</mat-icon>
-                  </mat-button-toggle>
-                }
-              </mat-button-toggle-group>
-
-              <h2>Colors</h2>
-              <mat-checkbox [checked]="colorful()" (change)="update({colorful: $event.checked})">Colorful</mat-checkbox>
+              <app-table-settings />
             </section>
           }
         </mat-drawer>
         <mat-drawer-content>
           @defer (on idle) {
-            <table (matSortChange)="update({ active: $event.active, direction: $event.direction })"
-                   [dataSource]="data.value()"
-                   [matSortDirection]="sortStart().direction"
-                   [matSortActive]="sortStart().active"
-                   [class]="tableClass()"
-                   matSortActive="name"
-                   matSortDirection="asc"
-                   mat-table
-                   matSort
-                   matSortDisableClear>
-
-              @for (col of columns; track col) {
-                <ng-container [matColumnDef]="col">
-                  <th mat-header-cell mat-sort-header *matHeaderCellDef>{{ col }}</th>
-                  <td mat-cell *matCellDef="let item">{{ item[col] }}</td>
-                </ng-container>
-              }
-              <tr mat-header-row *matHeaderRowDef="displayColumns();sticky:true"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayColumns();"></tr>
-            </table>
+            <app-table/>
           }
         </mat-drawer-content>
       </mat-drawer-container>
