@@ -26,7 +26,7 @@ import {
   MatButtonToggleGroup,
 } from "@angular/material/button-toggle";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { NgClass } from "@angular/common";
+import {NgClass, PlatformLocation} from "@angular/common";
 
 @Component({
   selector: "app-root",
@@ -229,6 +229,7 @@ export default class App {
     { value: "lines", tip: "Border lines", icon: "border_horizontal" },
     { value: "none", tip: "Border none", icon: "border_clear" },
   ];
+  protected readonly base = inject(PlatformLocation).getBaseHrefFromDOM();
 
   /**
    * The `Router` and the `ActivatedRoute` service! Our article subject!
@@ -247,7 +248,7 @@ export default class App {
   protected readonly data = httpResource<any[]>(
     () =>
       this.params()
-        ? `http://localhost:4200/persons.json?${
+        ? `${this.base}/persons.json?${
           new URLSearchParams(this.params() as Record<string, string>)
             .toString()
         }`
