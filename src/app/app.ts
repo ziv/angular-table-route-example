@@ -1,4 +1,4 @@
-import {Component, computed, inject} from "@angular/core";
+import {Component, computed, effect, inject, resource, signal} from "@angular/core";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {httpResource} from "@angular/common/http";
 import {coerceBooleanProperty} from "@angular/cdk/coercion";
@@ -6,19 +6,15 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {MatTableModule} from "@angular/material/table";
 import {MatSortModule, Sort} from "@angular/material/sort";
 import {MatPaginator} from "@angular/material/paginator";
-import {MatToolbar} from "@angular/material/toolbar";
-import {MatIconButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatDrawer, MatDrawerContainer, MatDrawerContent,} from "@angular/material/sidenav";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatDialog} from "@angular/material/dialog";
-import About from "./components/about";
 import type Person from "./person";
-import {FormControl, ReactiveFormsModule} from '@angular/forms';
-import Search from './components/search';
-import Table from './components/table';
+import {ReactiveFormsModule} from '@angular/forms';
 import TableSettings from './components/table-settings';
+import Toolbar from './components/toolbar';
+import {MatFormField, MatLabel} from '@angular/material/select';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {MatProgressBar} from '@angular/material/progress-bar';
 
 const PERSONS =
   "https://ziv.github.io/angular-table-route-example/persons.json?";
@@ -29,32 +25,20 @@ const PERSONS =
     MatPaginator,
     MatTableModule,
     MatSortModule,
-    MatToolbar,
-    MatIconButton,
-    MatIcon,
-    MatMenu,
-    MatMenuItem,
-    MatMenuTrigger,
     MatDrawerContainer,
     MatDrawerContent,
     MatDrawer,
-    MatTooltip,
     ReactiveFormsModule,
-    Search,
-    Table,
-    TableSettings
+    TableSettings,
+    Toolbar,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    MatIcon,
+    MatProgressBar
   ],
-  host: {
-    "[style.--mat-toolbar-container-background-color]":
-      '"var(--mat-sys-primary-container)"',
-    "[style.--mat-toolbar-container-text-color]":
-      '"var(--mat-sys-on-primary-container)"',
-  },
-  styles: `
-    mat-toolbar {
-      justify-content: space-between;
-    }
 
+  styles: `
     mat-drawer-container,
     mat-drawer-content {
       width: 100%;
@@ -66,59 +50,102 @@ const PERSONS =
       overflow-y: scroll;
     }
 
+    .loading-shade {
+      background: rgba(0, 0, 255, 0.05);
+      z-index: 99999;
+      display: flex;
+    }
+
+    mat-form-field, table {
+      width: 100%;
+    }
+
     section {
       margin: 1em;
+    }
+
+    article {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
   `,
   template: `
     <!--
-        All the "@defer {}" blocks are used to reduce the initial loading time of the application.
-        Without them, the bundle size would be large and not optimized for initial loading.
+      All the "@defer {}" blocks are used to reduce the initial loading time of the application.
+      Without them, the bundle size would be large and not optimized for initial loading.
 
-        @see https://angular.dev/guide/templates/defer#defer
-        -->
+      @see https://angular.dev/guide/templates/defer#defer
+    -->
     @defer (on idle) {
-      <mat-toolbar>
-        <h1>Route as source of truth example</h1>
-        <div class="search">
-          <app-search (query)="update($event)"/>
-        </div>
-
-        <button [matMenuTriggerFor]="main" mat-icon-button>
-          <mat-icon>menu</mat-icon>
-        </button>
-        <mat-menu #main>
-          <button (click)="table?.toggle()"
-                  mat-menu-item
-                  matTooltip="Open table options drawer"
-                  matTooltipPosition="left">
-            <mat-icon>table</mat-icon>
-            <span>Table options</span>
-          </button>
-          <button (click)="help()"
-                  mat-menu-item
-                  matTooltip="About this example"
-                  matTooltipPosition="left">
-            <mat-icon>info</mat-icon>
-            <span>About</span>
-          </button>
-        </mat-menu>
-      </mat-toolbar>
+      <app-toolbar (settings)="settings.toggle()"/>
     }
 
+    <mat-form-field class="search">
+      <mat-label>Search</mat-label>
+      <input #input
+             matInput
+             type="text"
+             placeholder="Search" (keyup)="update({q: input.value, page: 0})">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
     <main>
       <mat-drawer-container>
-        <mat-drawer mode="over" #table>
+        <mat-drawer mode="over" #settings>
           @defer (on idle) {
             <section>
-              <app-table-settings />
+              <app-table-settings (settings)="update($event)"/>
             </section>
           }
         </mat-drawer>
         <mat-drawer-content>
-          @defer (on idle) {
-            <app-table/>
+          @if (data.isLoading()) {
+            <div class="loading-shade abs-container">
+              <mat-progress-bar mode="indeterminate"/>
+            </div>
           }
+          @if (data.error()) {
+            <article class="abs-container">
+              <h2>Error loading data</h2>
+              <p>{{ data.error() }}</p>
+            </article>
+          }
+          @defer (on idle) {
+            <table (matSortChange)="update({ active: $event.active, direction: $event.direction })"
+                   [dataSource]="data.value()"
+                   [matSortDirection]="sortStart().direction"
+                   [matSortActive]="sortStart().active"
+                   [class]="tableClass()"
+                   matSortActive="name"
+                   matSortDirection="asc"
+                   mat-table
+                   matSort
+                   matSortDisableClear>
+
+              @for (col of columns; track col) {
+                <ng-container [matColumnDef]="col">
+                  <th mat-header-cell mat-sort-header *matHeaderCellDef>{{ col }}</th>
+                  <td mat-cell *matCellDef="let item">{{ item[col] }}</td>
+                </ng-container>
+              }
+
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell" [attr.colspan]="displayColumns().length">
+                  <article>
+                    <h2>No data available</h2>
+                    <p>Try change your query...</p>
+                    <p>You search for "{{ input.value }}"</p>
+                  </article>
+                </td>
+              </tr>
+
+              <tr mat-header-row *matHeaderRowDef="displayColumns();sticky:true"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayColumns();"></tr>
+            </table>
+          }
+
         </mat-drawer-content>
       </mat-drawer-container>
     </main>
@@ -134,12 +161,7 @@ const PERSONS =
   `,
 })
 export default class App {
-  /**
-   * Static data
-   * ---------------------------------------------------------------------------
-   * - Table columns
-   * - Table borders
-   */
+  // static data
   protected readonly columns = [
     "id",
     "name",
@@ -149,28 +171,16 @@ export default class App {
     "country",
     "phone",
   ];
-  protected readonly border = [
-    {value: "all", tip: "Border all", icon: "border_all"},
-    {value: "lines", tip: "Border lines", icon: "border_horizontal"},
-    {value: "none", tip: "Border none", icon: "border_clear"},
-  ];
-  protected readonly queryControl = new FormControl('');
-  protected readonly query = toSignal(this.queryControl.valueChanges);
 
   /**
-   * The `Router` and the `ActivatedRoute` service! Our article subject!
-   * ---------------------------------------------------------------------------
-   * The `Router` is used to update the route (query parameters).
-   * We use the `ActivatedRoute` to get the query parameters as a signal.
+   * Injecting the state management services, the Router and ActivatedRoute.
    */
   protected readonly router = inject(Router);
   protected readonly params = toSignal(inject(ActivatedRoute).queryParams);
-  protected readonly dialog = inject(MatDialog);
 
   /**
    * Fetch data by URL.
-   * The URL is dependent on the query parameters. If none are provided, it will not fetch any data (undefined URL).
-   * We use default value of an empty array to avoid errors when the data is not yet available.
+   * The URL is dependent on the query parameters signal.
    */
   protected readonly data = httpResource<Person[]>(
     () =>
@@ -180,14 +190,20 @@ export default class App {
     {defaultValue: []},
   );
 
-  // protected readonly query = signal('');
-
   // computed properties...
+
   /**
    * Update the paginator with the current page index.
    */
   protected readonly page = computed<number>(() =>
     parseInt(this.params()?.["page"] ?? "0", 10)
+  );
+
+  /**
+   * Update the paginator with the current page index.
+   */
+  protected readonly search = computed<string>(() =>
+    this.params()?.["q"] ?? ''
   );
 
   /**
@@ -199,32 +215,16 @@ export default class App {
   }));
 
   /**
-   * Update the colors selector with the current color state.
-   * Used by the tableClasses to compute the CSS classes for the table.
-   */
-  protected readonly colorful = computed<boolean | string>(() =>
-    this.params()?.["colorful"] ?? false
-  );
-
-  /**
-   * Update the border selector with the current border value.
-   * Used by the tableClasses to compute the CSS classes for the table.
-   */
-  protected readonly borders = computed<"all" | "lines" | "none">(() =>
-    this.params()?.["border"] ?? "lines"
-  );
-
-  /**
    * Compute the CSS classes for the table based on the current state.
    */
   protected readonly tableClass = computed(() => {
-    const classes = [];
-    if (coerceBooleanProperty(this.colorful())) {
-      classes.push("colorful");
+    let classes = '';
+    if (coerceBooleanProperty(this.params()?.["colorful"] ?? false)) {
+      classes += "colorful ";
     }
-    const borders = this.borders();
-    classes.push(borders === "all" ? "all" : borders === "none" ? "none" : "");
-    return classes.join(" ");
+    const borders = this.params()?.["border"] ?? "lines"
+    classes += borders === "all" ? "all" : borders === "none" ? "none" : "";
+    return classes;
   });
 
   /**
@@ -236,14 +236,14 @@ export default class App {
       : this.columns
   );
 
-  update(queryParams: { [key: string]: unknown }) {
+  /**
+   * Update the query parameters based on the provided key-value pairs.
+   * The new query parameters will be merged with the existing ones unless specified otherwise.
+   */
+  update(params: unknown, handling: "merge" | "replace" = "merge") {
     return this.router.navigate([], {
-      queryParams,
-      queryParamsHandling: "merge",
+      queryParams: params as { [key: string]: unknown },
+      queryParamsHandling: handling,
     });
-  }
-
-  help() {
-    this.dialog.open(About);
   }
 }

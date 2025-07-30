@@ -1,4 +1,4 @@
-import {Component, effect, inject} from "@angular/core";
+import {Component, effect, inject, OnInit, output} from "@angular/core";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {MatIcon} from "@angular/material/icon";
 import {MatFormField, MatLabel, MatOption, MatSelect,} from "@angular/material/select";
@@ -6,7 +6,8 @@ import {MatTooltip} from "@angular/material/tooltip";
 import {MatButtonToggle, MatButtonToggleGroup,} from "@angular/material/button-toggle";
 import {MatCheckbox} from "@angular/material/checkbox";
 import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
-import {Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: "app-table-settings",
@@ -43,7 +44,7 @@ import {Router} from '@angular/router';
     <h2>Borders</h2>
     <mat-button-toggle-group [formControl]="form.controls.border" hideSingleSelectionIndicator>
       @for (b of border; track b.value) {
-        <mat-button-toggle [matTooltip]="b.tip">
+        <mat-button-toggle [matTooltip]="b.tip" [value]="b.value">
           <mat-icon>{{ b.icon }}</mat-icon>
         </mat-button-toggle>
       }
@@ -53,7 +54,7 @@ import {Router} from '@angular/router';
     <mat-checkbox [formControl]="form.controls.colorful">Colorful</mat-checkbox>
   `,
 })
-export default class TableSettings {
+export default class TableSettings implements OnInit {
   protected readonly columns = [
     "id",
     "name",
@@ -70,21 +71,35 @@ export default class TableSettings {
   ];
 
   // form and router
-  protected readonly router = inject(Router);
   protected readonly form = new FormGroup({
     cols: new FormControl<string[]>(this.columns),
     colorful: new FormControl<boolean>(false),
     border: new FormControl<"all" | "lines" | "none">("lines"),
   });
-  readonly params = toSignal(this.form.valueChanges);
+  protected readonly params = toSignal<{ [key: string]: string }>(this.form.valueChanges as Observable<{
+    [key: string]: string
+  }>);
 
+  protected readonly queryParams = toSignal(inject(ActivatedRoute).queryParams);
+
+  readonly settings = output<{ [key: string]: string }>();
 
   constructor() {
+    // when the form changes (the signal is updated),
+    // we fire the data as a query parameter update
     effect(() => {
-      return this.router.navigate([], {
-        queryParams: this.params(),
-        queryParamsHandling: "merge",
-      });
+      this.settings.emit(this.params() ?? {});
     });
+  }
+
+  ngOnInit() {
+    const params = this.queryParams() as {
+      cols?: string[];
+      colorful?: boolean;
+      border?: "all" | "lines" | "none";
+    };
+    this.form.controls.cols.setValue(params.cols ?? this.columns);
+    this.form.controls.colorful.setValue(params.colorful ?? false);
+    this.form.controls.border.setValue(params.border ?? "lines");
   }
 }

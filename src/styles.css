@@ -17,7 +17,8 @@ html, body {
  * The rest is up to us and the Lord of browsers.
  * @see https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/CSS_layout/Flexbox
  */
-app-root {
+app-root,
+.abs-container {
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -28,24 +29,6 @@ app-root {
 }
 
 /* Special case of the input in the search bar... */
-app-search {
-  display: flex;
-  transform: translateY(10px);
-  --mat-form-field-container-height: 32px;
-  --mat-form-field-container-vertical-padding: 0px;
-
-  /*transform: translateY(20px);*/
-
-  .mat-mdc-text-field-wrapper {
-    background-color: white;
-    border-radius: 0.4rem;
-  }
-
-  mat-icon {
-    transform: translateY(4px) translateX(-10px);
-  }
-
-  input {
-    transform: translateY(-3px);
-  }
+.search .mat-mdc-form-field-subscript-wrapper {
+  display: none;
 }

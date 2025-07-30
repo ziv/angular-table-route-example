@@ -8,6 +8,7 @@ export default function server(
 ): Observable<HttpEvent<unknown>> {
   const url = new URL(req.urlWithParams);
 
+
   // don't mess with other requests, just our data :)
   if (!url.pathname.endsWith("persons.json")) {
     return next(req);
