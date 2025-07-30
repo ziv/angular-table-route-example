@@ -1,0 +1,49 @@
+name: deploy-github-pages
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    name: publish-github-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    environment:
+      name: github-pages # artifact name
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+
+      # force to install angular 20
+      - name: 🍄 Dependencies, build and versioning
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npm i semver --global
+          source ./scripts/bump-version.sh
+          git config --local user.name "Ziv Perry"
+          git config --local user.email "ziv.perry@gmail.com"
+          git tag -a "$NEXT_VERSION" -m "Release $NEXT_VERSION"
+          git push origin "$NEXT_VERSION"
+
+      - name: 🔥 Deploy to pages
+        id: deployment
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # auto generated
+          publish_dir: ./dist/ng-routes/browser/
