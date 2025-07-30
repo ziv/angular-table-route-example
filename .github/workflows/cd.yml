@@ -36,6 +36,7 @@ jobs:
           npm run build
           npm i semver --global
           source ./scripts/bump-version.sh
+          echo "aaa"
           git config --local user.name "Ziv Perry"
           git config --local user.email "ziv.perry@gmail.com"
           git tag -a "$NEXT_VERSION" -m "Release $NEXT_VERSION"
