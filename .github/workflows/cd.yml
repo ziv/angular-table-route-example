@@ -35,6 +35,7 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
+
       - name: 🔥 Deploy to pages
         id: deployment
         uses: peaceiris/actions-gh-pages@v4
