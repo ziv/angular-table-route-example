@@ -1,6 +1,5 @@
-import { bootstrapApplication } from '@angular/platform-browser';
-import { config } from './app/config';
-import { App } from './app/app';
+import { bootstrapApplication } from "@angular/platform-browser";
+import Config from "./app/config";
+import App from "./app/app";
 
-bootstrapApplication(App, config)
-  .catch((err) => console.error(err));
+bootstrapApplication(App, Config).catch(console.error);

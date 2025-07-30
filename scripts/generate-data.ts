@@ -1,5 +1,5 @@
-// tsx scripts/generate-data.ts > public/persons.json
-import {faker} from '@faker-js/faker';
+#!/usr/bin/env -S tsx scripts/generate-data.ts
+import { faker } from "@faker-js/faker";
 
 const persons = [];
 

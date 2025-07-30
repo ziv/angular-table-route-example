@@ -1,4 +1,28 @@
-/* You can add global styles to this file, and also import other style files */
+/**
+ * We use Noto Sans as the primary font (instead of Roboto).
+ * It is very consistent across platforms and languages.
+ * @see https://fonts.google.com/noto
+ */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: "Noto Sans", Roboto, Helvetica Neue, sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-weight: 300;
+}
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/**
+ * The app container is flex, and it fills the entire viewport.
+ * The rest is up to us and the Lord of browsers.
+ * @see https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/CSS_layout/Flexbox
+ */
+app-root {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
