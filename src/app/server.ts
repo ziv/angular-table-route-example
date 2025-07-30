@@ -5,17 +5,17 @@ import {
   HttpRequest,
   HttpResponse,
 } from "@angular/common/http";
-import { map, Observable } from "rxjs";
+import {map, Observable} from "rxjs";
 import type Person from "./person";
 
 export default function server(
-  req: HttpRequest<Person[]>,
+  req: HttpRequest<unknown>,
   next: HttpHandlerFn,
 ): Observable<HttpEvent<unknown>> {
   const url = new URL(req.urlWithParams);
 
-  // don't mess with other requests
-  if (url.pathname !== "/persons.json") {
+  // don't mess with other requests, just our data :)
+  if (!url.pathname.endsWith("persons.json")) {
     return next(req);
   }
 
@@ -37,7 +37,7 @@ export default function server(
           ? (a[active] > b[active] ? 1 : -1)
           : (a[active] < b[active] ? 1 : -1)
       );
-      copy = copy.clone({ body });
+      copy = copy.clone({body});
     }
 
     // pagination

@@ -1,35 +1,25 @@
-import { Component, computed, inject } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { httpResource } from "@angular/common/http";
-import { coerceBooleanProperty } from "@angular/cdk/coercion";
-import { ActivatedRoute, Router } from "@angular/router";
-import { MatTableModule } from "@angular/material/table";
-import { MatSortModule, Sort } from "@angular/material/sort";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatToolbar } from "@angular/material/toolbar";
-import { MatIconButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
-import {
-  MatDrawer,
-  MatDrawerContainer,
-  MatDrawerContent,
-} from "@angular/material/sidenav";
-import {
-  MatFormField,
-  MatLabel,
-  MatOption,
-  MatSelect,
-} from "@angular/material/select";
-import { MatTooltip } from "@angular/material/tooltip";
-import {
-  MatButtonToggle,
-  MatButtonToggleGroup,
-} from "@angular/material/button-toggle";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatDialog } from "@angular/material/dialog";
-import About from "./about";
+import {Component, computed, inject} from "@angular/core";
+import {toSignal} from "@angular/core/rxjs-interop";
+import {httpResource} from "@angular/common/http";
+import {coerceBooleanProperty} from "@angular/cdk/coercion";
+import {ActivatedRoute, Router} from "@angular/router";
+import {MatTableModule} from "@angular/material/table";
+import {MatSortModule, Sort} from "@angular/material/sort";
+import {MatPaginator} from "@angular/material/paginator";
+import {MatToolbar} from "@angular/material/toolbar";
+import {MatIconButton} from "@angular/material/button";
+import {MatIcon} from "@angular/material/icon";
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {MatDrawer, MatDrawerContainer, MatDrawerContent,} from "@angular/material/sidenav";
+import {MatFormField, MatLabel, MatOption, MatSelect,} from "@angular/material/select";
+import {MatTooltip} from "@angular/material/tooltip";
+import {MatButtonToggle, MatButtonToggleGroup,} from "@angular/material/button-toggle";
+import {MatCheckbox} from "@angular/material/checkbox";
+import {MatDialog} from "@angular/material/dialog";
+import About from "./components/about";
 import type Person from "./person";
+import {FormControl, ReactiveFormsModule} from '@angular/forms';
+import Search from './components/search';
 
 const PERSONS =
   "https://ziv.github.io/angular-table-route-example/persons.json?";
@@ -57,6 +47,8 @@ const PERSONS =
     MatButtonToggleGroup,
     MatButtonToggle,
     MatCheckbox,
+    ReactiveFormsModule,
+    Search
   ],
   host: {
     "[style.--mat-toolbar-container-background-color]":
@@ -111,6 +103,9 @@ const PERSONS =
   template: `
     <mat-toolbar>
       <h1>Route as source of truth example</h1>
+      <div class="search">
+        <app-search (query)="update({q: $event})"/>
+      </div>
 
       <!--
       All the "@defer {}" blocks are used to reduce the initial loading time of the application.
@@ -140,7 +135,6 @@ const PERSONS =
         </mat-menu>
       }
     </mat-toolbar>
-
 
     <main>
       <mat-drawer-container>
@@ -227,10 +221,12 @@ export default class App {
     "phone",
   ];
   protected readonly border = [
-    { value: "all", tip: "Border all", icon: "border_all" },
-    { value: "lines", tip: "Border lines", icon: "border_horizontal" },
-    { value: "none", tip: "Border none", icon: "border_clear" },
+    {value: "all", tip: "Border all", icon: "border_all"},
+    {value: "lines", tip: "Border lines", icon: "border_horizontal"},
+    {value: "none", tip: "Border none", icon: "border_clear"},
   ];
+  protected readonly queryControl = new FormControl('');
+  protected readonly query = toSignal(this.queryControl.valueChanges);
 
   /**
    * The `Router` and the `ActivatedRoute` service! Our article subject!
@@ -252,8 +248,10 @@ export default class App {
       this.params()
         ? PERSONS + new URLSearchParams(this.params() as Record<string, string>)
         : undefined,
-    { defaultValue: [] },
+    {defaultValue: []},
   );
+
+  // protected readonly query = signal('');
 
   // computed properties...
   /**
