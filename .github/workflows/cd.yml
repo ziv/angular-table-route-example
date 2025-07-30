@@ -34,13 +34,6 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run build
-          npm i semver --global
-          source ./scripts/bump-version.sh
-          echo "aaa"
-          git config --local user.name "Ziv Perry"
-          git config --local user.email "ziv.perry@gmail.com"
-          git tag -a "$X_NEXT_VERSION" -m "Release $X_NEXT_VERSION"
-          git push origin "$X_NEXT_VERSION"
 
       - name: 🔥 Deploy to pages
         id: deployment
