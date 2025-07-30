@@ -6,11 +6,12 @@ import {
   HttpResponse,
 } from "@angular/common/http";
 import { map, Observable } from "rxjs";
+import type Person from "./person";
 
 export default function server(
-  req: HttpRequest<unknown>,
+  req: HttpRequest<Person[]>,
   next: HttpHandlerFn,
-): Observable<HttpEvent<any>> {
+): Observable<HttpEvent<unknown>> {
   const url = new URL(req.urlWithParams);
 
   // don't mess with other requests
@@ -19,19 +20,19 @@ export default function server(
   }
 
   // take the full response and make the server tasks here...
-  return next(req).pipe(map((event) => {
+  return next(req).pipe(map((event: HttpEvent<unknown>) => {
     if (event.type !== HttpEventType.Response) {
       return event;
     }
-    let copy = event.clone() as HttpResponse<any>;
+    let copy = event.clone() as HttpResponse<Person[]>;
 
     // sorting
-    const active = url.searchParams.get("active");
+    const active = url.searchParams.get("active") as keyof Person;
     const direction = url.searchParams.get("direction");
 
     if (active && direction) {
-      let body = [...copy.body];
-      body.sort((a: any, b: any) =>
+      const body = [...copy.body ?? []];
+      body.sort((a: Person, b: Person) =>
         (direction === "asc")
           ? (a[active] > b[active] ? 1 : -1)
           : (a[active] < b[active] ? 1 : -1)
@@ -44,7 +45,7 @@ export default function server(
     const size = parseInt(url.searchParams.get("size") ?? "20", 10);
 
     copy = copy.clone({
-      body: copy.body.slice(page * size, (page + 1) * size),
+      body: (copy.body ?? []).slice(page * size, (page + 1) * size),
     });
 
     return copy;

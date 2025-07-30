@@ -1,20 +1,38 @@
-import {Component, computed, inject} from "@angular/core";
-import {ActivatedRoute, Router} from "@angular/router";
-import {MatTableModule} from "@angular/material/table";
-import {MatSortModule, Sort} from "@angular/material/sort";
-import {MatPaginator} from "@angular/material/paginator";
-import {toSignal} from "@angular/core/rxjs-interop";
-import {httpResource} from "@angular/common/http";
-import {MatToolbar} from "@angular/material/toolbar";
-import {MatIconButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
-import {MatDrawer, MatDrawerContainer, MatDrawerContent,} from "@angular/material/sidenav";
-import {MatFormField, MatLabel, MatOption, MatSelect,} from "@angular/material/select";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatButtonToggle, MatButtonToggleGroup,} from "@angular/material/button-toggle";
-import {MatCheckbox} from "@angular/material/checkbox";
-import {NgClass} from "@angular/common";
+import { Component, computed, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { httpResource } from "@angular/common/http";
+import { coerceBooleanProperty } from "@angular/cdk/coercion";
+import { ActivatedRoute, Router } from "@angular/router";
+import { MatTableModule } from "@angular/material/table";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatToolbar } from "@angular/material/toolbar";
+import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
+import {
+  MatDrawer,
+  MatDrawerContainer,
+  MatDrawerContent,
+} from "@angular/material/sidenav";
+import {
+  MatFormField,
+  MatLabel,
+  MatOption,
+  MatSelect,
+} from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import {
+  MatButtonToggle,
+  MatButtonToggleGroup,
+} from "@angular/material/button-toggle";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDialog } from "@angular/material/dialog";
+import About from "./about";
+import type Person from "./person";
+
+const PERSONS =
+  "https://ziv.github.io/angular-table-route-example/persons.json?";
 
 @Component({
   selector: "app-root",
@@ -39,7 +57,6 @@ import {NgClass} from "@angular/common";
     MatButtonToggleGroup,
     MatButtonToggle,
     MatCheckbox,
-    NgClass,
   ],
   host: {
     "[style.--mat-toolbar-container-background-color]":
@@ -65,24 +82,18 @@ import {NgClass} from "@angular/common";
 
     table {
       width: 100%;
+    }
 
-      &.all {
-        td {
-          border: 1px solid currentColor;
-        }
-      }
+    table.all td {
+      border: 1px solid currentColor;
+    }
 
-      &.none {
-        td {
-          border: 0;
-        }
-      }
+    table.none td {
+      border: 0;
+    }
 
-      &.colorful {
-        tr:nth-child(even) {
-          background-color: var(--mat-sys-secondary-container);
-        }
-      }
+    table.colorful tr:nth-child(even) {
+      background-color: var(--mat-sys-secondary-container);
     }
 
     section {
@@ -108,16 +119,21 @@ import {NgClass} from "@angular/common";
       @see https://angular.dev/guide/templates/defer#defer
       -->
       @defer (on idle) {
-        <button mat-icon-button [matMenuTriggerFor]="main" mastTooltip="Show menu">
+        <button [matMenuTriggerFor]="main" mat-icon-button>
           <mat-icon>menu</mat-icon>
         </button>
         <mat-menu #main>
-          <button mat-menu-item (click)="table?.toggle()" matTooltip="Open table options drawer"
+          <button (click)="table?.toggle()"
+                  mat-menu-item
+                  matTooltip="Open table options drawer"
                   matTooltipPosition="left">
             <mat-icon>table</mat-icon>
             <span>Table options</span>
           </button>
-          <button mat-menu-item matTooltip="About this example" matTooltipPosition="left">
+          <button (click)="help()"
+                  mat-menu-item
+                  matTooltip="About this example"
+                  matTooltipPosition="left">
             <mat-icon>info</mat-icon>
             <span>About</span>
           </button>
@@ -163,7 +179,7 @@ import {NgClass} from "@angular/common";
                    [dataSource]="data.value()"
                    [matSortDirection]="sortStart().direction"
                    [matSortActive]="sortStart().active"
-                   [ngClass]="[borders(), colorful() ? 'colorful' : '']"
+                   [class]="tableClass()"
                    matSortActive="name"
                    matSortDirection="asc"
                    mat-table
@@ -192,8 +208,6 @@ import {NgClass} from "@angular/common";
                      length="300"
                      pageSize="30"/>
     }
-
-
   `,
 })
 export default class App {
@@ -213,9 +227,9 @@ export default class App {
     "phone",
   ];
   protected readonly border = [
-    {value: "all", tip: "Border all", icon: "border_all"},
-    {value: "lines", tip: "Border lines", icon: "border_horizontal"},
-    {value: "none", tip: "Border none", icon: "border_clear"},
+    { value: "all", tip: "Border all", icon: "border_all" },
+    { value: "lines", tip: "Border lines", icon: "border_horizontal" },
+    { value: "none", tip: "Border none", icon: "border_clear" },
   ];
 
   /**
@@ -226,34 +240,69 @@ export default class App {
    */
   protected readonly router = inject(Router);
   protected readonly params = toSignal(inject(ActivatedRoute).queryParams);
+  protected readonly dialog = inject(MatDialog);
 
   /**
    * Fetch data by URL.
    * The URL is dependent on the query parameters. If none are provided, it will not fetch any data (undefined URL).
    * We use default value of an empty array to avoid errors when the data is not yet available.
    */
-  protected readonly data = httpResource<any[]>(
+  protected readonly data = httpResource<Person[]>(
     () =>
       this.params()
-        ? 'https://ziv.github.io/angular-table-route-example/persons.json?' + new URLSearchParams(this.params() as Record<string, string>)
+        ? PERSONS + new URLSearchParams(this.params() as Record<string, string>)
         : undefined,
-    {defaultValue: []},
+    { defaultValue: [] },
   );
 
   // computed properties...
+  /**
+   * Update the paginator with the current page index.
+   */
   protected readonly page = computed<number>(() =>
     parseInt(this.params()?.["page"] ?? "0", 10)
   );
-  protected readonly borders = computed<"all" | "lines" | "none">(() =>
-    this.params()?.["border"] ?? "lines"
-  );
+
+  /**
+   * Update the sort state with the current active column and direction.
+   */
   protected readonly sortStart = computed<Sort>(() => ({
     active: this.params()?.["active"] ?? "name",
     direction: this.params()?.["direction"] ?? "asc",
   }));
-  protected readonly colorful = computed<boolean>(() =>
+
+  /**
+   * Update the colors selector with the current color state.
+   * Used by the tableClasses to compute the CSS classes for the table.
+   */
+  protected readonly colorful = computed<boolean | string>(() =>
     this.params()?.["colorful"] ?? false
   );
+
+  /**
+   * Update the border selector with the current border value.
+   * Used by the tableClasses to compute the CSS classes for the table.
+   */
+  protected readonly borders = computed<"all" | "lines" | "none">(() =>
+    this.params()?.["border"] ?? "lines"
+  );
+
+  /**
+   * Compute the CSS classes for the table based on the current state.
+   */
+  protected readonly tableClass = computed(() => {
+    const classes = [];
+    if (coerceBooleanProperty(this.colorful())) {
+      classes.push("colorful");
+    }
+    const borders = this.borders();
+    classes.push(borders === "all" ? "all" : borders === "none" ? "none" : "");
+    return classes.join(" ");
+  });
+
+  /**
+   * Compute the columns to display in the table based on the query parameters.
+   */
   protected readonly displayColumns = computed(() =>
     Array.isArray(this.params()?.["cols"])
       ? this.params()?.["cols"]
@@ -265,5 +314,9 @@ export default class App {
       queryParams,
       queryParamsHandling: "merge",
     });
+  }
+
+  help() {
+    this.dialog.open(About);
   }
 }

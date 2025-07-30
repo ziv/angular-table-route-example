@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
@@ -28,13 +28,11 @@ jobs:
         with:
           node-version: 24
 
-
       # force to install angular 20
       - name: 🍄 Dependencies, build and versioning
         run: |
           npm ci --no-audit --no-fund
           npm run build
-
 
       - name: 🔥 Deploy to pages
         id: deployment
