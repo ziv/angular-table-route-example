@@ -6,9 +6,6 @@ import { RouterOutlet } from "@angular/router";
   imports: [
     RouterOutlet,
   ],
-  styles: `
-
-  `,
   template: "<router-outlet />",
 })
 export default class Shell {

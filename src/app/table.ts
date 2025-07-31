@@ -11,7 +11,6 @@ import {
   MatDrawerContainer,
   MatDrawerContent,
 } from "@angular/material/sidenav";
-import type Person from "./person";
 import { ReactiveFormsModule } from "@angular/forms";
 import TableSettings from "./components/table-settings";
 import Toolbar from "./components/toolbar";
@@ -19,6 +18,7 @@ import { MatFormField, MatLabel } from "@angular/material/select";
 import { MatInput } from "@angular/material/input";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressBar } from "@angular/material/progress-bar";
+import type Person from "./person";
 
 const PERSONS =
   "https://ziv.github.io/angular-table-route-example/persons.json?";
@@ -89,38 +89,28 @@ const PERSONS =
     }
   `,
   template: `
+    <app-toolbar (settings)="settings.toggle()"/>
     <!--
-      All the "@defer {}" blocks are used to reduce the initial loading time of the application.
-      Without them, the bundle size would be large and not optimized for initial loading.
-
-      @see https://angular.dev/guide/templates/defer#defer
+    The search bar updates the query parameters.
     -->
-    @defer (on idle) {
-      <app-toolbar (settings)="settings.toggle()"/>
-      <!--
-      The search bar updates the query parameters.
-      -->
-      <mat-form-field class="search">
-        <mat-label>Search</mat-label>
-        <input #input
-               matInput
-               type="text"
-               placeholder="Search" (keyup)="update({q: input.value, page: 0})">
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
-    }
+    <mat-form-field class="search">
+      <mat-label>Search</mat-label>
+      <input #input
+             matInput
+             type="text"
+             placeholder="Search" (keyup)="update({q: input.value, page: 0})">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
 
     <main>
       <mat-drawer-container>
         <mat-drawer mode="over" #settings>
-          @defer (on idle) {
-            <!--
-            The settings updates the query parameters.
-            -->
-            <section>
-              <app-table-settings (settings)="update($event)"/>
-            </section>
-          }
+          <!--
+          The settings updates the query parameters.
+          -->
+          <section>
+            <app-table-settings (settings)="update($event)"/>
+          </section>
         </mat-drawer>
         <mat-drawer-content>
           @if (data.isLoading()) {
@@ -184,16 +174,15 @@ const PERSONS =
     </main>
 
 
-    @defer (on idle) {
-      <!--
-      The paginator updates the query parameters.
-      -->
-      <mat-paginator (page)="update({ page: $event.pageIndex, size: $event.pageSize })"
-                     [pageIndex]="page()"
-                     [pageSizeOptions]="[20, 40, 60]"
-                     length="300"
-                     pageSize="30"/>
-    }
+    <!--
+    The paginator updates the query parameters.
+    -->
+    <mat-paginator (page)="update({ page: $event.pageIndex, size: $event.pageSize })"
+                   [pageIndex]="page()"
+                   [pageSizeOptions]="[20, 40, 60]"
+                   length="300"
+                   pageSize="30"/>
+
   `,
 })
 export default class Table {

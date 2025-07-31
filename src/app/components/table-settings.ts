@@ -92,10 +92,11 @@ export default class TableSettings implements OnInit {
     border: new FormControl<"all" | "lines" | "none">("lines"),
   });
 
-  // convert query params and form value to signals
+  // form values change as a signal
   protected readonly formParams = toSignal<Params>(
     this.form.valueChanges as Observable<Params>,
   );
+  // query parameters as a signal
   protected readonly queryParams = toSignal<Params>(
     inject(ActivatedRoute).queryParams,
   );
@@ -104,9 +105,8 @@ export default class TableSettings implements OnInit {
   readonly settings = output<Params>();
 
   constructor() {
-    // when the form changes (the signal is updated),
-    // we fire the data as a query parameter update
     effect(() => {
+      // when the form changes (the signal is updated) the data is emitted
       this.settings.emit(this.formParams() ?? {});
     });
   }
