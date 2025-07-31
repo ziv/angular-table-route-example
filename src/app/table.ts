@@ -1,20 +1,24 @@
-import {Component, computed, effect, inject, resource, signal} from "@angular/core";
-import {toSignal} from "@angular/core/rxjs-interop";
-import {httpResource} from "@angular/common/http";
-import {coerceBooleanProperty} from "@angular/cdk/coercion";
-import {ActivatedRoute, Router} from "@angular/router";
-import {MatTableModule} from "@angular/material/table";
-import {MatSortModule, Sort} from "@angular/material/sort";
-import {MatPaginator} from "@angular/material/paginator";
-import {MatDrawer, MatDrawerContainer, MatDrawerContent,} from "@angular/material/sidenav";
+import { Component, computed, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { httpResource } from "@angular/common/http";
+import { coerceBooleanProperty } from "@angular/cdk/coercion";
+import { ActivatedRoute, Router } from "@angular/router";
+import { MatTableModule } from "@angular/material/table";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatPaginator } from "@angular/material/paginator";
+import {
+  MatDrawer,
+  MatDrawerContainer,
+  MatDrawerContent,
+} from "@angular/material/sidenav";
 import type Person from "./person";
-import {ReactiveFormsModule} from '@angular/forms';
-import TableSettings from './components/table-settings';
-import Toolbar from './components/toolbar';
-import {MatFormField, MatLabel} from '@angular/material/select';
-import {MatInput} from '@angular/material/input';
-import {MatIcon} from '@angular/material/icon';
-import {MatProgressBar} from '@angular/material/progress-bar';
+import { ReactiveFormsModule } from "@angular/forms";
+import TableSettings from "./components/table-settings";
+import Toolbar from "./components/toolbar";
+import { MatFormField, MatLabel } from "@angular/material/select";
+import { MatInput } from "@angular/material/input";
+import { MatIcon } from "@angular/material/icon";
+import { MatProgressBar } from "@angular/material/progress-bar";
 
 const PERSONS =
   "https://ziv.github.io/angular-table-route-example/persons.json?";
@@ -35,7 +39,7 @@ const PERSONS =
     MatInput,
     MatLabel,
     MatIcon,
-    MatProgressBar
+    MatProgressBar,
   ],
 
   styles: `
@@ -60,6 +64,18 @@ const PERSONS =
       width: 100%;
     }
 
+    table.all td {
+      border: 1px solid currentColor;
+    }
+
+    table.none td {
+      border: 0;
+    }
+
+    table.colorful tr:nth-child(even) {
+      background-color: var(--mat-sys-secondary-container);
+    }
+
     section {
       margin: 1em;
     }
@@ -81,20 +97,26 @@ const PERSONS =
     -->
     @defer (on idle) {
       <app-toolbar (settings)="settings.toggle()"/>
+      <!--
+      The search bar updates the query parameters.
+      -->
+      <mat-form-field class="search">
+        <mat-label>Search</mat-label>
+        <input #input
+               matInput
+               type="text"
+               placeholder="Search" (keyup)="update({q: input.value, page: 0})">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
     }
 
-    <mat-form-field class="search">
-      <mat-label>Search</mat-label>
-      <input #input
-             matInput
-             type="text"
-             placeholder="Search" (keyup)="update({q: input.value, page: 0})">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
     <main>
       <mat-drawer-container>
         <mat-drawer mode="over" #settings>
           @defer (on idle) {
+            <!--
+            The settings updates the query parameters.
+            -->
             <section>
               <app-table-settings (settings)="update($event)"/>
             </section>
@@ -113,6 +135,9 @@ const PERSONS =
             </article>
           }
           @defer (on idle) {
+            <!--
+            The sorter updates the query parameters.
+            -->
             <table (matSortChange)="update({ active: $event.active, direction: $event.direction })"
                    [dataSource]="data.value()"
                    [matSortDirection]="sortStart().direction"
@@ -124,6 +149,9 @@ const PERSONS =
                    matSort
                    matSortDisableClear>
 
+              <!--
+              We prepare all column templates, even those we do not display.
+              -->
               @for (col of columns; track col) {
                 <ng-container [matColumnDef]="col">
                   <th mat-header-cell mat-sort-header *matHeaderCellDef>{{ col }}</th>
@@ -131,12 +159,17 @@ const PERSONS =
                 </ng-container>
               }
 
+              <!--
+              "matNoDataRow" is used to display a message when there is no data available.
+              Use the "columns.length" to set the colspan of the cell. "attr.<name>" is used
+              to bind the attribute dynamically when Angular does not support it directly.
+              -->
               <tr class="mat-row" *matNoDataRow>
                 <td class="mat-cell" [attr.colspan]="displayColumns().length">
                   <article>
                     <h2>No data available</h2>
                     <p>Try change your query...</p>
-                    <p>You search for "{{ input.value }}"</p>
+                    <p>You search for "{{ params()?.['q'] ?? '' }}"</p>
                   </article>
                 </td>
               </tr>
@@ -152,6 +185,9 @@ const PERSONS =
 
 
     @defer (on idle) {
+      <!--
+      The paginator updates the query parameters.
+      -->
       <mat-paginator (page)="update({ page: $event.pageIndex, size: $event.pageSize })"
                      [pageIndex]="page()"
                      [pageSizeOptions]="[20, 40, 60]"
@@ -160,7 +196,7 @@ const PERSONS =
     }
   `,
 })
-export default class App {
+export default class Table {
   // static data
   protected readonly columns = [
     "id",
@@ -187,7 +223,7 @@ export default class App {
       this.params()
         ? PERSONS + new URLSearchParams(this.params() as Record<string, string>)
         : undefined,
-    {defaultValue: []},
+    { defaultValue: [] },
   );
 
   // computed properties...
@@ -197,13 +233,6 @@ export default class App {
    */
   protected readonly page = computed<number>(() =>
     parseInt(this.params()?.["page"] ?? "0", 10)
-  );
-
-  /**
-   * Update the paginator with the current page index.
-   */
-  protected readonly search = computed<string>(() =>
-    this.params()?.["q"] ?? ''
   );
 
   /**
@@ -218,11 +247,11 @@ export default class App {
    * Compute the CSS classes for the table based on the current state.
    */
   protected readonly tableClass = computed(() => {
-    let classes = '';
+    let classes = "";
     if (coerceBooleanProperty(this.params()?.["colorful"] ?? false)) {
       classes += "colorful ";
     }
-    const borders = this.params()?.["border"] ?? "lines"
+    const borders = this.params()?.["border"] ?? "lines";
     classes += borders === "all" ? "all" : borders === "none" ? "none" : "";
     return classes;
   });

@@ -1,5 +1,10 @@
-import {HttpEvent, HttpEventType, HttpHandlerFn, HttpRequest,} from "@angular/common/http";
-import {map, Observable} from "rxjs";
+import {
+  HttpEvent,
+  HttpEventType,
+  HttpHandlerFn,
+  HttpRequest,
+} from "@angular/common/http";
+import { map, Observable } from "rxjs";
 import type Person from "./person";
 
 export default function server(
@@ -7,7 +12,6 @@ export default function server(
   next: HttpHandlerFn,
 ): Observable<HttpEvent<unknown>> {
   const url = new URL(req.urlWithParams);
-
 
   // don't mess with other requests, just our data :)
   if (!url.pathname.endsWith("persons.json")) {
@@ -26,7 +30,7 @@ export default function server(
     // searching...
     const q = url.searchParams.get("q");
     if (q) {
-      body = body.map(item => {
+      body = body.map((item) => {
         const flat = JSON.stringify(item).toLowerCase().trim();
         if (flat.includes(q)) {
           return item;
@@ -50,9 +54,8 @@ export default function server(
     // pagination
     const page = parseInt(url.searchParams.get("page") ?? "0", 10);
     const size = parseInt(url.searchParams.get("size") ?? "20", 10);
-
     body = body.slice(page * size, (page + 1) * size);
 
-    return event.clone({body});
+    return event.clone({ body });
   }));
 }

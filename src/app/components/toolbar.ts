@@ -1,12 +1,12 @@
-import {Component, inject, output} from "@angular/core";
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MatIcon} from '@angular/material/icon';
-import {MatToolbar} from '@angular/material/toolbar';
-import {MatIconButton} from '@angular/material/button';
-import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
-import {MatTooltip} from '@angular/material/tooltip';
-import {MatDialog} from '@angular/material/dialog';
-import About from './about';
+import { Component, inject, output } from "@angular/core";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatIcon } from "@angular/material/icon";
+import { MatToolbar } from "@angular/material/toolbar";
+import { MatIconButton } from "@angular/material/button";
+import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
+import { MatTooltip } from "@angular/material/tooltip";
+import { MatDialog } from "@angular/material/dialog";
+import About from "../about";
 
 @Component({
   selector: "app-toolbar",
@@ -24,8 +24,7 @@ import About from './about';
   host: {
     "[style.--mat-toolbar-container-background-color]":
       '"var(--mat-sys-primary)"',
-    "[style.--mat-toolbar-container-text-color]":
-      '"var(--mat-sys-on-primary)"',
+    "[style.--mat-toolbar-container-text-color]": '"var(--mat-sys-on-primary)"',
   },
   styles: `
     mat-toolbar {

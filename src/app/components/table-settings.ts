@@ -1,13 +1,27 @@
-import {Component, effect, inject, OnInit, output} from "@angular/core";
-import {toSignal} from "@angular/core/rxjs-interop";
-import {MatIcon} from "@angular/material/icon";
-import {MatFormField, MatLabel, MatOption, MatSelect,} from "@angular/material/select";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatButtonToggle, MatButtonToggleGroup,} from "@angular/material/button-toggle";
-import {MatCheckbox} from "@angular/material/checkbox";
-import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
-import {ActivatedRoute} from '@angular/router';
-import {Observable} from 'rxjs';
+import { Component, effect, inject, OnInit, output } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { MatIcon } from "@angular/material/icon";
+import {
+  MatFormField,
+  MatLabel,
+  MatOption,
+  MatSelect,
+} from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import {
+  MatButtonToggle,
+  MatButtonToggleGroup,
+} from "@angular/material/button-toggle";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { ActivatedRoute } from "@angular/router";
+import { Observable } from "rxjs";
+
+type Params = {
+  cols?: string[];
+  colorful?: boolean;
+  border?: "all" | "lines" | "none";
+};
 
 @Component({
   selector: "app-table-settings",
@@ -55,6 +69,7 @@ import {Observable} from 'rxjs';
   `,
 })
 export default class TableSettings implements OnInit {
+  // static data
   protected readonly columns = [
     "id",
     "name",
@@ -65,34 +80,39 @@ export default class TableSettings implements OnInit {
     "phone",
   ];
   protected readonly border = [
-    {value: "all", tip: "Border all", icon: "border_all"},
-    {value: "lines", tip: "Border lines", icon: "border_horizontal"},
-    {value: "none", tip: "Border none", icon: "border_clear"},
+    { value: "all", tip: "Border all", icon: "border_all" },
+    { value: "lines", tip: "Border lines", icon: "border_horizontal" },
+    { value: "none", tip: "Border none", icon: "border_clear" },
   ];
 
-  // form and router
+  // form controls
   protected readonly form = new FormGroup({
     cols: new FormControl<string[]>(this.columns),
     colorful: new FormControl<boolean>(false),
     border: new FormControl<"all" | "lines" | "none">("lines"),
   });
-  protected readonly params = toSignal<{ [key: string]: string }>(this.form.valueChanges as Observable<{
-    [key: string]: string
-  }>);
 
-  protected readonly queryParams = toSignal(inject(ActivatedRoute).queryParams);
+  // convert query params and form value to signals
+  protected readonly formParams = toSignal<Params>(
+    this.form.valueChanges as Observable<Params>,
+  );
+  protected readonly queryParams = toSignal<Params>(
+    inject(ActivatedRoute).queryParams,
+  );
 
-  readonly settings = output<{ [key: string]: string }>();
+  // output
+  readonly settings = output<Params>();
 
   constructor() {
     // when the form changes (the signal is updated),
     // we fire the data as a query parameter update
     effect(() => {
-      this.settings.emit(this.params() ?? {});
+      this.settings.emit(this.formParams() ?? {});
     });
   }
 
   ngOnInit() {
+    // set the initial values from the query parameters
     const params = this.queryParams() as {
       cols?: string[];
       colorful?: boolean;

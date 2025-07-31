@@ -5,7 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from "@angular/core";
-import { provideRouter, withViewTransitions } from "@angular/router";
+import { provideRouter, Routes, withViewTransitions } from "@angular/router";
 import {
   provideHttpClient,
   withFetch,
@@ -13,6 +13,22 @@ import {
 } from "@angular/common/http";
 import fakeServer from "./server";
 import { MatIconRegistry } from "@angular/material/icon";
+
+const routes: Routes = [
+  {
+    path: "login",
+    loadComponent: () => import("./login"),
+  },
+  {
+    path: "table",
+    loadComponent: () => import("./table"),
+  },
+  {
+    path: "",
+    redirectTo: "login",
+    pathMatch: "full",
+  },
+];
 
 export default {
   providers: [
@@ -32,7 +48,7 @@ export default {
      * The application does not have any routes, but it
      * relies on the router for events and view transitions.
      */
-    provideRouter([], withViewTransitions()),
+    provideRouter(routes, withViewTransitions()),
 
     /**
      * Some extra configuration for the app.
